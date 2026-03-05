@@ -26,27 +26,36 @@ export const Login = () => {
 
       if (result.success) {
         setSuccess(result.message);
+        
+        // --- ส่วนที่แก้ไข: แยกเส้นทาง Admin และ User ---
         setTimeout(() => {
-          navigate(result.user?.role === 'admin' ? '/admin' : '/dashboard');
+          if (result.user?.role === 'admin') {
+            // แอดมินเด้งไปหน้า Dashboard หลังบ้านหน้าเดียวจบ
+            navigate('/admin', { replace: true });
+          } else {
+            // ยูสเซอร์ทั่วไปเด้งไปหน้าแรก (Home)
+            navigate('/', { replace: true });
+          }
         }, 1500);
+        // -------------------------------------------
+
       } else {
         setError(result.message);
       }
     } catch (err) {
-      setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
+      setError('เกิดข้อผิดพลาด กรุณลองใหม่อีกครั้ง');
     }
   };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-4">
-      {/* Container หลัก */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-[1100px] min-h-[700px] bg-white rounded-[3rem] shadow-2xl shadow-slate-200 overflow-hidden flex flex-col md:flex-row border border-slate-100"
       >
         
-        {/* ฝั่งซ้าย (Branding) - สีน้ำเงินเข้ม Navy */}
+        {/* ฝั่งซ้าย (Branding) */}
         <div className="hidden md:flex md:w-[40%] bg-[#0F172A] p-12 flex-col justify-between relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full -mr-32 -mt-32 blur-3xl" />
           
@@ -80,7 +89,6 @@ export const Login = () => {
         <div className="flex-1 p-8 md:p-16 flex flex-col justify-center bg-white">
           <div className="max-w-md mx-auto w-full space-y-8">
             
-            {/* ปุ่มสลับ เข้าสู่ระบบ / สมัครสมาชิก */}
             <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
               <button 
                 type="button"
@@ -105,7 +113,6 @@ export const Login = () => {
               <p className="text-slate-500 font-bold mt-1">จัดการทุกอย่างได้ง่ายๆ ในที่เดียว</p>
             </div>
 
-            {/* การแจ้งเตือน Error/Success */}
             <AnimatePresence mode="wait">
               {(error || success) && (
                 <motion.div 
@@ -120,7 +127,6 @@ export const Login = () => {
               )}
             </AnimatePresence>
 
-            {/* ฟอร์ม Input */}
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
                 <div className="space-y-1">
@@ -172,7 +178,6 @@ export const Login = () => {
               </button>
             </form>
 
-            {/* ช่องทางอื่นๆ */}
             <div className="relative py-2">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
               <div className="relative flex justify-center text-[10px] font-black text-slate-400 uppercase bg-white px-4 tracking-widest">หรือดำเนินการด้วย</div>
@@ -186,7 +191,6 @@ export const Login = () => {
                 <img src="https://www.facebook.com/favicon.ico" className="w-4 h-4" alt="facebook" /> FACEBOOK
               </button>
             </div>
-
           </div>
         </div>
       </motion.div>
