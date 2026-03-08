@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingBag, Mail, Lock, Eye, EyeOff, CheckCircle2, AlertCircle, User, ArrowRight, Phone } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/src/context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 interface FormErrors {
   email?: string;
@@ -74,14 +74,19 @@ export const Login = () => {
         : await register(
             formData.email, 
             formData.password, 
-            `${formData.firstName} ${formData.lastName}`, // รวมชื่อส่งไป API
+            `${formData.firstName} ${formData.lastName}`,
             formData.phone
           );
 
       if (result.success) {
         setSuccess(result.message);
+        
         setTimeout(() => {
-          navigate(result.user?.role === 'admin' ? '/admin' : '/', { replace: true });
+          if (result.user?.role === 'admin') {
+            navigate('/AdminDashboard', { replace: true });
+          } else {
+            navigate('/', { replace: true });
+          }
         }, 1500);
       } else {
         setError(result.message);
@@ -106,7 +111,6 @@ export const Login = () => {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-[1150px] min-h-[700px] bg-white rounded-[3.5rem] shadow-2xl shadow-slate-200 overflow-hidden flex flex-col md:flex-row border border-slate-100"
       >
-        {/* Left Side (Branding) */}
         <div className="hidden md:flex md:w-[35%] bg-[#0F172A] p-12 flex-col justify-between relative">
           <Link to="/" className="flex items-center gap-3 relative z-10">
             <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-900/40">
@@ -125,10 +129,8 @@ export const Login = () => {
           </div>
         </div>
 
-        {/* Right Side (Form) */}
         <div className="flex-1 p-8 md:p-12 lg:p-16 flex flex-col justify-center bg-white overflow-y-auto">
           <div className="max-w-xl mx-auto w-full space-y-8 py-8">
-            {/* Tab Switcher */}
             <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
               <button type="button" onClick={() => { setIsLogin(true); setFormErrors({}); }} className={`flex-1 py-3 text-sm font-black rounded-xl transition-all ${isLogin ? 'bg-white text-blue-600 shadow-sm border border-slate-100' : 'text-slate-400'}`}>เข้าสู่ระบบ</button>
               <button type="button" onClick={() => { setIsLogin(false); setFormErrors({}); }} className={`flex-1 py-3 text-sm font-black rounded-xl transition-all ${!isLogin ? 'bg-white text-blue-600 shadow-sm border border-slate-100' : 'text-slate-400'}`}>สมัครสมาชิก</button>
@@ -147,7 +149,6 @@ export const Login = () => {
               <AnimatePresence mode="popLayout">
                 {!isLogin && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-4">
-                    {/* ชื่อ - นามสกุล */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">ชื่อจริง</span>
@@ -164,7 +165,6 @@ export const Login = () => {
                       </div>
                     </div>
 
-                    {/* เบอร์โทรศัพท์ */}
                     <div className="space-y-1">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">เบอร์โทรศัพท์</span>
                       <div className="relative">
@@ -177,7 +177,6 @@ export const Login = () => {
                 )}
               </AnimatePresence>
 
-              {/* อีเมล */}
               <div className="space-y-1">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">อีเมล</span>
                 <div className="relative">
@@ -187,7 +186,6 @@ export const Login = () => {
                 {formErrors.email && <p className="text-[9px] text-red-500 font-bold ml-2">{formErrors.email}</p>}
               </div>
 
-              {/* รหัสผ่าน */}
               <div className="space-y-1">
                 <div className="flex justify-between items-center px-2">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">รหัสผ่าน</span>
@@ -209,7 +207,6 @@ export const Login = () => {
               </button>
             </form>
 
-            {/* Social Login */}
             <div className="relative py-2">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
               <div className="relative flex justify-center text-[10px] font-black text-slate-400 uppercase bg-white px-4 tracking-widest">Fast Access</div>

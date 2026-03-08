@@ -6,8 +6,8 @@ interface User {
   email: string;
   role: 'user' | 'admin';
   avatar?: string;
-  phone?: string; // เพิ่มใหม่
-  address?: string; // เพิ่มใหม่
+  phone?: string;
+  address?: string;
   joinedDate?: string;
 }
 
@@ -49,15 +49,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      if ((email === 'admin@example.com' && password === 'admin') || (email === 'admin' && password === 'admin')) {
-        const userData: User = { id: 'admin_01', name: 'Administrator', email: 'admin@chutiphonshop.com', role: 'admin', joinedDate: new Date().toISOString() };
-        setUser(userData);
-        localStorage.setItem('active_session', JSON.stringify(userData));
-        return { success: true, message: 'ยินดีต้อนรับผู้ดูแลระบบ', user: userData };
+      
+      if (email === 'admin@example.com' || email === 'admin') {
+        if (password === 'admin1234') {
+          const userData: User = { 
+            id: 'admin_01', 
+            name: 'Administrator', 
+            email: 'admin@example.com', 
+            role: 'admin', 
+            joinedDate: new Date().toISOString() 
+          };
+          setUser(userData);
+          localStorage.setItem('active_session', JSON.stringify(userData));
+          return { success: true, message: 'ยินดีต้อนรับผู้ดูแลระบบ', user: userData };
+        } else {
+          return { success: false, message: 'รหัสผ่านผู้ดูแลระบบไม่ถูกต้อง' };
+        }
       }
+
       const usersRaw = localStorage.getItem('registered_users');
       const users: (User & { password?: string })[] = usersRaw ? JSON.parse(usersRaw) : [];
       const foundUser = users.find(u => u.email === email && u.password === password);
+      
       if (foundUser) {
         const { password: _, ...userData } = foundUser;
         setUser(userData as User);
