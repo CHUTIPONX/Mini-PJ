@@ -8,7 +8,6 @@ import { cn } from '@/src/lib/utils';
 import { useCart } from '@/src/context/CartContext';
 import { useAuth } from '@/src/context/AuthContext';
 
-// --- COMMON LOGIC ---
 const useIsSpecialPage = () => {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith('/admin');
@@ -20,7 +19,6 @@ const useIsSpecialPage = () => {
   return isAdmin || isDashboard;
 };
 
-// --- HEADER COMPONENT ---
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const location = useLocation();
@@ -35,25 +33,23 @@ export const Header = () => {
   const navLinks = [
     { name: 'หน้าแรก', href: '/' },
     { name: 'ร้านค้า', href: '/shop' },
-    { name: 'แดชบอร์ด', href: dashboardHref },
+    { name: 'บัญชีของคุณ', href: dashboardHref },
   ];
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white/70 backdrop-blur-xl border-b border-slate-100 transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
-          {/* Logo Section */}
           <div className="flex items-center gap-10">
             <Link to="/" className="flex items-center gap-2.5 group">
               <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg shadow-slate-200 group-hover:scale-105 transition-transform duration-500 rotate-3 group-hover:rotate-0">
                 <ShoppingCart className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-black text-slate-900 tracking-tighter italic">
-                CHUTIPHON<span className="text-indigo-600 not-italic">.</span>
+              <span className="text-xl font-black text-slate-900 tracking-tighter">
+                CHUTIPHON<span className="text-indigo-600">.</span>
               </span>
             </Link>
             
-            {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-8">
               {navLinks.map((link) => (
                 <Link
@@ -70,7 +66,6 @@ export const Header = () => {
             </nav>
           </div>
 
-          {/* Search Section */}
           <div className="hidden md:flex items-center gap-4 flex-1 max-w-sm mx-10">
             <div className="relative w-full group">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
@@ -82,7 +77,6 @@ export const Header = () => {
             </div>
           </div>
 
-          {/* Actions Section */}
           <div className="flex items-center gap-3">
             <Link to="/checkout" className="p-2.5 text-slate-600 hover:bg-slate-100 rounded-xl transition-all relative group">
               <ShoppingCart className="w-5 h-5 group-hover:text-indigo-600 transition-colors" />
@@ -113,7 +107,7 @@ export const Header = () => {
                 to="/login"
                 className="hidden sm:flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-indigo-600 hover:shadow-xl hover:shadow-indigo-100 transition-all duration-300"
               >
-                Login
+                เข้าสู่ระบบ
               </Link>
             )}
             
@@ -127,7 +121,6 @@ export const Header = () => {
         </div>
       </div>
 
-      {/* Mobile Menu */}
       {isMenuOpen && (
         <div className="lg:hidden bg-white border-b border-slate-100 py-8 px-6 space-y-8 shadow-2xl animate-in slide-in-from-top duration-300">
           <nav className="flex flex-col gap-2">
@@ -148,7 +141,6 @@ export const Header = () => {
   );
 };
 
-// --- FOOTER COMPONENT (NEW PREMIUM VERSION) ---
 export const Footer = () => {
   const isSpecialPage = useIsSpecialPage();
 
@@ -156,21 +148,19 @@ export const Footer = () => {
 
   return (
     <footer className="relative bg-white border-t border-slate-100 overflow-hidden">
-      {/* Decorative Circles */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-50/50 blur-[120px] rounded-full -z-10" />
       <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-blue-50/50 blur-[100px] rounded-full -z-10" />
 
       <div className="max-w-7xl mx-auto px-6 pt-24 pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 mb-20">
           
-          {/* Brand Identity */}
           <div className="lg:col-span-4 space-y-8">
             <Link to="/" className="flex items-center gap-3">
               <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center shadow-2xl shadow-indigo-100 rotate-3">
                 <ShoppingCart className="w-6 h-6 text-white" />
               </div>
-              <span className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">
-                CHUTIPHON<span className="text-indigo-600 not-italic">.</span>
+              <span className="text-2xl font-black text-slate-900 tracking-tighter uppercase">
+                CHUTIPHON<span className="text-indigo-600">.</span>
               </span>
             </Link>
             <p className="text-base text-slate-500 leading-relaxed font-medium max-w-sm">
@@ -197,7 +187,6 @@ export const Footer = () => {
             </div>
           </div>
 
-          {/* Navigation Links */}
           <div className="lg:col-span-5 grid grid-cols-2 gap-8">
             <div className="space-y-8">
               <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.25em]">Explore</h3>
@@ -227,7 +216,6 @@ export const Footer = () => {
             </div>
           </div>
 
-          {/* Contact Section */}
           <div className="lg:col-span-3 space-y-8">
             <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.25em]">Contact Us</h3>
             <div className="space-y-6">
@@ -249,7 +237,6 @@ export const Footer = () => {
 
         </div>
         
-        {/* Footer Bottom */}
         <div className="pt-12 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8 text-center md:text-left">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">

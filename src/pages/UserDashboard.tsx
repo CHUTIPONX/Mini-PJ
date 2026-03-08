@@ -1,104 +1,141 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { Link, useLocation } from 'react-router-dom';
 import { 
-  ShoppingBag, Package, Heart, TrendingUp, Clock
+  ShoppingCart, Search, Menu, X, LogOut 
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '@/src/context/AuthContext';
+import { motion } from 'framer-motion';
 import { cn } from '@/src/lib/utils';
-import { DashboardLayout } from '../components/laout/DashboardLayout'; // ใช้ Layout หลัก
+import { useCart } from '@/src/context/CartContext';
+import { useAuth } from '@/src/context/AuthContext';
 
-// ส่วนประกอบของ Card สถิติ - คงไว้เหมือนเดิม
-const StatCard = ({ title, value, change, icon: Icon, color }: any) => (
-  <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all group">
-    <div className="flex justify-between items-start mb-6">
-      <div className={cn("p-4 rounded-2xl", color)}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-      <div className="flex items-center gap-1 text-emerald-500 font-black text-xs">
-        {change} <TrendingUp className="w-3 h-3" />
-      </div>
-    </div>
-    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{title}</h4>
-    <p className="text-3xl font-black text-slate-900 tracking-tighter">{value}</p>
-  </div>
-);
+export const Header = () => {
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const location = useLocation();
+  const { getTotalItems } = useCart();
+  const { user, logout, isAuthenticated } = useAuth();
 
-// คอมโพเนนต์ ChevronRight - คงไว้เหมือนเดิม
-const ChevronRight = ({ className }: any) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m9 18 6-6-6-6"/></svg>
-);
+  const dashboardHref = user?.role === 'admin' ? '/admin' : '/dashboard';
 
-export const UserDashboard = () => {
-  const { isAuthenticated } = useAuth();
-
-  if (!isAuthenticated) return null;
+  // ข้อมูล Navigation ที่จะไปปรากฏบน Header
+  const navLinks = [
+    { name: 'หน้าแรก', href: '/' },
+    { name: 'ร้านค้า', href: '/shop' },
+    { name: 'บัญชีของคุณ', href: dashboardHref },
+  ];
 
   return (
-    <DashboardLayout>
-      <div className="space-y-10">
-        {/* Header ส่วนเนื้อหาหลัก */}
-        <header>
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <h2 className="text-4xl font-black text-slate-900 tracking-tighter">ยินดีต้อนรับกลับมา!</h2>
-            <p className="text-slate-400 font-bold mt-1 uppercase text-xs tracking-[0.2em]">ภาพรวมบัญชีและกิจกรรมล่าสุดของคุณ</p>
-          </motion.div>
-        </header>
-
-        {/* สถิติ (Stats Grid) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <StatCard 
-            title="คำสั่งซื้อทั้งหมด" 
-            value="12 รายการ" 
-            change="+20%" 
-            icon={Package} 
-            color="bg-blue-600" 
-          />
-          <StatCard 
-            title="สินค้าที่ถูกใจ" 
-            value="24 ชิ้น" 
-            change="+5%" 
-            icon={Heart} 
-            color="bg-rose-500" 
-          />
-        </div>
-
-        {/* กิจกรรมล่าสุด (Recent Activity) */}
-        <section className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-3">
-              <Clock className="w-6 h-6 text-blue-600" /> กิจกรรมล่าสุด
-            </h3>
-            <Link to="/orders" className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline">
-              ดูทั้งหมด
+    <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-slate-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-20">
+          
+          {/* 1. Logo Section */}
+          <div className="flex items-center gap-8">
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-0 transition-transform duration-500 rotate-3">
+                <ShoppingCart className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-xl font-black text-slate-900 tracking-tighter uppercase">
+                CHUTIPHON<span className="text-indigo-600">.</span>
+              </span>
             </Link>
           </div>
-          
-          <div className="space-y-4">
-            {[1, 2].map((i) => (
-              <motion.div 
-                key={i} 
-                whileHover={{ x: 5 }}
-                className="flex items-center justify-between p-6 bg-slate-50 rounded-[2rem] border border-transparent hover:border-blue-100 hover:bg-white transition-all group cursor-pointer"
-              >
-                <div className="flex items-center gap-5">
-                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                    <ShoppingBag className="w-5 h-5 text-slate-400 group-hover:text-blue-600 transition-colors" />
-                  </div>
-                  <div>
-                    <p className="font-black text-slate-900 text-sm">คำสั่งซื้อ #ORD-202{i}</p>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">กำลังจัดส่ง • {i * 2} ชั่วโมงที่แล้ว</p>
-                  </div>
+
+          {/* 2. Center Navigation Links (ตามรูปภาพ) */}
+          <nav className="hidden lg:flex items-center gap-10">
+            {navLinks.map((link) => {
+              const isActive = location.pathname === link.href;
+              return (
+                <Link
+                  key={link.name}
+                  to={link.href}
+                  className={cn(
+                    "text-[13px] font-black uppercase tracking-widest transition-all relative py-2",
+                    isActive 
+                      ? "text-indigo-600 after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-indigo-600" 
+                      : "text-slate-500 hover:text-slate-900"
+                  )}
+                >
+                  {link.name}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* 3. Right Section: Search, Cart, User Info */}
+          <div className="flex items-center gap-2">
+            
+            {/* Search Bar */}
+            <div className="hidden md:flex items-center relative group mr-2">
+              <Search className="absolute left-3.5 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+              <input
+                type="text"
+                placeholder="ค้นหาสินค้าที่สนใจ..."
+                className="pl-10 pr-4 py-2 bg-slate-100/50 border-none rounded-2xl text-xs w-48 focus:w-64 focus:ring-2 focus:ring-indigo-500/10 focus:bg-white transition-all outline-none font-bold"
+              />
+            </div>
+
+            {/* Cart Button */}
+            <Link to="/checkout" className="p-2.5 text-slate-600 hover:bg-slate-100 rounded-xl relative group">
+              <ShoppingCart className="w-5 h-5 group-hover:text-indigo-600 transition-colors" />
+              {getTotalItems() > 0 && (
+                <span className="absolute top-1.5 right-1.5 min-w-[16px] h-[16px] bg-indigo-600 text-white text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white">
+                  {getTotalItems()}
+                </span>
+              )}
+            </Link>
+
+            <div className="hidden sm:block w-px h-6 bg-slate-200 mx-2" />
+
+            {/* User Info & Logout */}
+            {isAuthenticated ? (
+              <div className="flex items-center gap-4 pl-2">
+                <div className="text-right hidden md:block">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Member</p>
+                  <p className="text-[13px] font-black text-slate-900 leading-none">{user?.name}</p>
                 </div>
-                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-blue-600 transition-all" />
-              </motion.div>
-            ))}
+                <button 
+                  onClick={logout}
+                  className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </div>
+            ) : (
+              <Link 
+                to="/login"
+                className="px-5 py-2.5 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-600 transition-all"
+              >
+                เข้าสู่ระบบ
+              </Link>
+            )}
+
+            {/* Mobile Menu Toggle */}
+            <button className="lg:hidden p-2.5 text-slate-600" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
           </div>
-        </section>
+        </div>
       </div>
-    </DashboardLayout>
+
+      {/* Mobile Menu Overlay */}
+      {isMenuOpen && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }} 
+          animate={{ opacity: 1, y: 0 }}
+          className="lg:hidden bg-white border-b border-slate-100 p-6 flex flex-col gap-4"
+        >
+          {navLinks.map((link) => (
+            <Link 
+              key={link.name} 
+              to={link.href} 
+              className="text-sm font-black uppercase tracking-widest text-slate-600 hover:text-indigo-600"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              {link.name}
+            </Link>
+          ))}
+        </motion.div>
+      )}
+    </header>
   );
 };
