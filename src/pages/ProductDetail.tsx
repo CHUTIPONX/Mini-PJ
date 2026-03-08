@@ -1,18 +1,24 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Minus, ShoppingBag, ArrowLeft, Star, ShieldCheck, Truck } from 'lucide-react';
+import { Plus, Minus, ShoppingBag, ArrowLeft, Star, ShieldCheck, Truck, Heart } from 'lucide-react';
 import { useCart } from '@/src/context/CartContext';
+import { useFavorites } from '@/src/context/FavoriteContext';
 import { products } from '@/src/data/products';
 
 export const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { favorites, toggleFavorite } = useFavorites();
   const [quantity, setQuantity] = React.useState(1);
   const [isAdded, setIsAdded] = React.useState(false);
 
   const product = products.find((p) => p.id === Number(id));
+
+  const isFavorite = (productId: number) => {
+    return favorites.some((fav: any) => fav.id === productId);
+  };
 
   if (!product) {
     return (
@@ -35,23 +41,21 @@ export const ProductDetail = () => {
   }
 
   const handleAdd = () => {
-    // ปรับ Logic: ส่ง quantity เข้าไปในฟังก์ชันเดียว (ถ้า Context รองรับ) 
-    // หรือถ้า addToCart รับทีละชิ้น ให้เปลี่ยนเป็นฟังก์ชันที่จัดการภายในครั้งเดียวเพื่อลดการ Re-render
     addToCart({
       id: product.id,
       name: product.name,
       description: product.description,
       price: product.price,
       image: product.image,
-      quantity: quantity // แนะนำให้ปรับ Context ให้รับ quantity ได้โดยตรง
+      quantity: quantity
     });
 
     setIsAdded(true);
     
-    // แทนที่จะ navigate ทันที การทำ "Success State" จะช่วยให้ UX ดูลื่นไหลขึ้น
     setTimeout(() => {
-      navigate('/shop');
-    }, 800);
+      setIsAdded(false); // Reset state for future adds
+      // Optional: navigate away or show persistent success message
+    }, 1500);
   };
 
   return (
@@ -96,9 +100,21 @@ export const ProductDetail = () => {
               <span className="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-black uppercase tracking-widest">
                 Premium Collection
               </span>
-              <h1 className="text-5xl font-black text-slate-900 leading-tight">
-                {product.name}
-              </h1>
+              <div className="flex items-start justify-between gap-4">
+                <h1 className="text-5xl font-black text-slate-900 leading-tight">
+                  {product.name}
+                </h1>
+                <button
+                  onClick={() => toggleFavorite(product)}
+                  className="p-4 bg-white/90 backdrop-blur-md rounded-full shadow-sm text-slate-400 hover:text-red-500 transition-colors active:scale-90 border border-slate-100 mt-2"
+                >
+                  <Heart 
+                    className={`w-6 h-6 transition-colors ${
+                      isFavorite(product.id) ? 'fill-red-500 text-red-500' : ''
+                    }`} 
+                  />
+                </button>
+              </div>
               <div className="flex items-center gap-4">
                 <div className="flex text-amber-400">
                   {[...Array(5)].map((_, i) => <Star key={i} className="w-5 h-5 fill-current" />)}
