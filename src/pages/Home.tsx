@@ -12,8 +12,11 @@ import {
   Minus, 
   ArrowRight 
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { useCart } from '@/src/context/CartContext';
+import { useFavorites } from '@/src/context/FavoriteContext';
+import { useAuth } from '@/src/context/AuthContext';
 import { products } from '@/src/data/products';
 
 const features = [
@@ -24,9 +27,11 @@ const features = [
 ];
 
 export const Home = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const { addToCart } = useCart();
+  const { favorites, toggleFavorite } = useFavorites();
   const [quantities, setQuantities] = React.useState<Record<number, number>>({});
-  const [wishlist, setWishlist] = React.useState<Set<number>>(new Set());
 
   const getQuantity = (productId: number) => quantities[productId] || 0;
   
@@ -35,22 +40,42 @@ export const Home = () => {
     setQuantities(prev => ({ ...prev, [productId]: value }));
   };
 
-  const toggleWishlist = (productId: number) => {
-    const newWishlist = new Set(wishlist);
-    newWishlist.has(productId) ? newWishlist.delete(productId) : newWishlist.add(productId);
-    setWishlist(newWishlist);
+  const checkAuthAndAction = (action: () => void) => {
+    if (!isAuthenticated) {
+      toast.error('กรุณาเข้าสู่ระบบก่อนดำเนินการ', {
+        style: { fontWeight: 'normal' }
+      });
+      navigate('/login');
+      return;
+    }
+    action();
   };
 
   const handleAddWithQuantity = (product: any) => {
     const qty = getQuantity(product.id);
     if (qty > 0) {
-      addToCart({ ...product, quantity: qty });
-      setQuantities(prev => ({ ...prev, [product.id]: 0 }));
+      checkAuthAndAction(() => {
+        addToCart({ ...product, quantity: qty });
+        setQuantities(prev => ({ ...prev, [product.id]: 0 }));
+        toast.success(`เพิ่ม ${product.name} ลงตะกร้าแล้ว`, {
+          style: { fontWeight: 'normal' }
+        });
+      });
     }
   };
 
+  const handleToggleFavorite = (product: any) => {
+    checkAuthAndAction(() => {
+      toggleFavorite(product);
+    });
+  };
+
+  const isFavorite = (productId: number) => {
+    return favorites.some((fav: any) => fav.id === productId);
+  };
+
   return (
-    <div className="space-y-24 pb-32 bg-white">
+    <div className="space-y-24 pb-32 bg-white font-sans">
       <section className="relative px-4 pt-6">
         <div className="max-w-7xl mx-auto relative group overflow-hidden rounded-[2.5rem] min-h-[600px] flex items-center shadow-2xl shadow-slate-200">
           <div 
@@ -156,10 +181,10 @@ export const Home = () => {
                   />
                 </Link>
                 <button 
-                  onClick={() => toggleWishlist(product.id)}
+                  onClick={() => handleToggleFavorite(product)}
                   className="absolute top-5 right-5 p-3 bg-white/90 backdrop-blur-md rounded-2xl text-slate-400 hover:text-red-500 transition-all shadow-sm active:scale-90"
                 >
-                  <Heart className={`w-5 h-5 ${wishlist.has(product.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                  <Heart className={`w-5 h-5 ${isFavorite(product.id) ? 'fill-red-500 text-red-500' : ''}`} />
                 </button>
               </div>
 

@@ -35,12 +35,6 @@ const stats = [
   { label: 'รายได้รวม', value: '฿125,000', change: '-2.1%', isUp: false, icon: TrendingUp, color: 'bg-emerald-50 text-emerald-600' },
 ];
 
-const recentOrders = [
-  { id: '#ORD-7742', customer: 'สมชาย ใจดี', date: '24 พ.ค. 2567', status: 'สำเร็จแล้ว', amount: '฿2,450.00', statusColor: 'bg-emerald-50 text-emerald-600' },
-  { id: '#ORD-7741', customer: 'พรพิมล รุ่งเรือง', date: '23 พ.ค. 2567', status: 'กำลังส่ง', amount: '฿1,120.00', statusColor: 'bg-blue-50 text-blue-600' },
-  { id: '#ORD-7740', customer: 'วิชัย สุขสันต์', date: '23 พ.ค. 2567', status: 'รอดำเนินการ', amount: '฿850.00', statusColor: 'bg-amber-50 text-amber-600' },
-];
-
 export const AdminDashboard = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
@@ -58,7 +52,10 @@ export const AdminDashboard = () => {
     name: "",
     price: "",
     stock: "",
-    createdAt: ""
+    category: "เสื้อผ้า",
+    description: "สัมผัสความนุ่มระดับพรีเมียมด้วยผ้า Cotton 100%",
+    image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=800",
+    rating: 4.8
   });
 
   useEffect(() => {
@@ -74,24 +71,35 @@ export const AdminDashboard = () => {
   const saveProducts = (list: any) => {
     setProducts(list);
     localStorage.setItem("products", JSON.stringify(list));
+    window.dispatchEvent(new Event('storage'));
   };
 
   const handleSubmit = () => {
     if (!form.name || !form.price) return;
     let newProducts = [...products];
 
+    const productData = {
+      ...form,
+      id: editIndex !== null ? products[editIndex].id : Date.now(),
+      price: Number(form.price),
+      stock: Number(form.stock),
+      createdAt: editIndex !== null ? products[editIndex].createdAt : new Date().toISOString()
+    };
+
     if (editIndex !== null) {
-      newProducts[editIndex] = form;
+      newProducts[editIndex] = productData;
       setEditIndex(null);
     } else {
-      newProducts.push({
-        ...form,
-        createdAt: new Date().toISOString()
-      });
+      newProducts.push(productData);
     }
 
     saveProducts(newProducts);
-    setForm({ name: "", price: "", stock: "", createdAt: "" });
+    setForm({ 
+      name: "", price: "", stock: "", category: "เสื้อผ้า", 
+      description: "สัมผัสความนุ่มระดับพรีเมียมด้วยผ้า Cotton 100%", 
+      image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=800",
+      rating: 4.8
+    });
     setShowModal(false);
   };
 
@@ -361,30 +369,32 @@ export const AdminDashboard = () => {
       </main>
 
       {showModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[60] p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[60] p-4 overflow-y-auto">
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-white p-8 md:p-10 rounded-[3rem] w-full max-w-md shadow-2xl space-y-8"
+            className="bg-white p-8 md:p-10 rounded-[3rem] w-full max-w-md shadow-2xl space-y-6 my-8"
           >
             <div>
               <h2 className="text-3xl font-black text-slate-800 tracking-tight uppercase">
                 {editIndex !== null ? "Edit Item" : "New Item"}
               </h2>
-              <p className="text-slate-400 text-sm font-bold">กรอกข้อมูลสินค้าด้านล่าง</p>
+              <p className="text-slate-400 text-sm font-bold">กรอกข้อมูลสินค้าแบบพรีเมียม</p>
             </div>
-            <div className="space-y-5">
-              <div className="space-y-2">
+            
+            <div className="space-y-4">
+              <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Product Name</label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="เช่น รองเท้าผ้าใบ"
+                  placeholder="เช่น Premium Cotton Tee"
                   className="w-full bg-slate-50 border-2 border-transparent p-4 rounded-2xl outline-none focus:border-blue-600 focus:bg-white font-bold transition-all"
                 />
               </div>
+
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Price (฿)</label>
                   <input
                     type="number"
@@ -393,17 +403,49 @@ export const AdminDashboard = () => {
                     className="w-full bg-slate-50 border-2 border-transparent p-4 rounded-2xl outline-none focus:border-blue-600 focus:bg-white font-bold transition-all"
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Stock</label>
                   <input
                     type="number"
                     value={form.stock}
-                    onChange={(e) => setForm({ ...form, stock: e.target.value })}a
+                    onChange={(e) => setForm({ ...form, stock: e.target.value })}
                     className="w-full bg-slate-50 border-2 border-transparent p-4 rounded-2xl outline-none focus:border-blue-600 focus:bg-white font-bold transition-all"
                   />
                 </div>
               </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Category</label>
+                <select 
+                  value={form.category}
+                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  className="w-full bg-slate-50 p-4 rounded-2xl outline-none font-bold"
+                >
+                  {['เสื้อผ้า', 'รองเท้า', 'กระเป๋า', 'อุปกรณ์เสริม'].map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Description</label>
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  className="w-full bg-slate-50 p-4 rounded-2xl outline-none h-24 font-medium"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Image URL</label>
+                <input
+                  value={form.image}
+                  onChange={(e) => setForm({ ...form, image: e.target.value })}
+                  className="w-full bg-slate-50 p-4 rounded-2xl outline-none font-bold text-xs"
+                />
+              </div>
             </div>
+
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button onClick={() => setShowModal(false)} className="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-black uppercase text-xs tracking-widest">Cancel</button>
               <button onClick={handleSubmit} className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg shadow-blue-100">Save Item</button>

@@ -14,7 +14,7 @@ import {
   Phone,
   Home
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '@/src/context/CartContext';
 import { useAuth } from '@/src/context/AuthContext';
 
@@ -28,12 +28,14 @@ interface FormData {
 }
 
 export const Checkout = () => {
+  const navigate = useNavigate();
   const { items, removeFromCart, updateQuantity, getTotalPrice, clearCart } = useCart();
   const { user, isAuthenticated } = useAuth();
   
   const [paymentMethod, setPaymentMethod] = React.useState('qr');
   const [isOrderComplete, setIsOrderComplete] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [finalOrderId, setFinalOrderId] = React.useState('');
   const [finalSummary, setFinalSummary] = React.useState({
     total: 0,
     customerName: ''
@@ -48,46 +50,100 @@ export const Checkout = () => {
     postcode: '',
   });
 
-  // --- ส่วนดึงข้อมูลจาก Profile และ Address ---
+  // --- แก้ไข: Logic ดึงข้อมูลที่อยู่แบบ Real-time และรองรับที่อยู่ใหม่ ---
   React.useEffect(() => {
     const syncData = () => {
       if (!isAuthenticated) return;
       const savedAddresses = localStorage.getItem('user_addresses');
       const addressList = savedAddresses ? JSON.parse(savedAddresses) : [];
-      const defaultAddr = addressList.find((addr: any) => addr.isDefault) || addressList[0];
+      
+      // เลือกที่อยู่ที่เป็น Default หรืออันล่าสุดที่เพิ่มเข้ามา
+      const activeAddr = addressList.find((addr: any) => addr.isDefault) || addressList[0];
       const nameParts = user?.name ? user.name.split(' ') : ['', ''];
 
       setFormData({
-        firstName: user?.firstName || nameParts[0] || defaultAddr?.recipient?.split(' ')[0] || '',
-        lastName: user?.lastName || nameParts[1] || defaultAddr?.recipient?.split(' ')[1] || '',
-        phone: user?.phone || defaultAddr?.phone || '',
-        address: defaultAddr?.address || '',
-        province: defaultAddr?.province || 'กรุงเทพมหานคร',
-        postcode: defaultAddr?.postcode || '',
+        firstName: user?.firstName || nameParts[0] || activeAddr?.recipient?.split(' ')[0] || '',
+        lastName: user?.lastName || nameParts[1] || activeAddr?.recipient?.split(' ')[1] || '',
+        phone: activeAddr?.phone || user?.phone || '',
+        address: activeAddr?.address || '',
+        // รวม แขวง เขต จังหวัด เข้าด้วยกันเพื่อความชัดเจน
+        province: activeAddr 
+          ? `${activeAddr.subdistrict || ''} ${activeAddr.district || ''} ${activeAddr.province || ''}`.trim() 
+          : 'กรุงเทพมหานคร',
+        postcode: activeAddr?.postcode || activeAddr?.zipcode || '',
       });
     };
 
     syncData();
     window.addEventListener('storage', syncData);
-    return () => window.removeEventListener('storage', syncData);
+    // ดักฟัง Event พิเศษกรณีมีการอัปเดตที่อยู่ภายในหน้าเดียวกัน
+    window.addEventListener('addressUpdated', syncData); 
+    
+    return () => {
+      window.removeEventListener('storage', syncData);
+      window.removeEventListener('addressUpdated', syncData);
+    };
   }, [isAuthenticated, user]);
 
+  // --- แก้ไข: บันทึกข้อมูลที่อยู่และพิกัดลงใน Mock Orders เพื่อใช้ในหน้า Tracking ---
   const handleSubmitOrder = async () => {
     setIsSubmitting(true);
-    setFinalSummary({
-      total: getTotalPrice(),
-      customerName: `${formData.firstName} ${formData.lastName}`
-    });
-    // จำลองการเชื่อมต่อ API
+    
+    const orderId = `ORD-${Date.now().toString().slice(-6)}`;
+    const totalPrice = getTotalPrice();
+    const customerFullName = `${formData.firstName} ${formData.lastName}`;
+
+    // ดึงพิกัดจากที่อยู่ที่เลือกไว้
+    const savedAddresses = localStorage.getItem('user_addresses');
+    const addressList = savedAddresses ? JSON.parse(savedAddresses) : [];
+    const activeAddr = addressList.find((addr: any) => addr.isDefault) || addressList[0];
+
+    const newOrder = {
+      id: orderId,
+      created_at: new Date().toISOString(),
+      status: 'Pending',
+      total_amount: totalPrice,
+      customer_name: customerFullName,
+      items_count: items.length,
+      items: items,
+      // ส่งก้อนข้อมูลที่อยู่แบบละเอียดไปให้หน้า Tracking
+      shipping_address: {
+        full_address: `${formData.address} ${formData.province} ${formData.postcode}`,
+        lat: activeAddr?.lat || 13.9130, // ถ้าไม่มีพิกัด ให้ใช้ Default (Chatuchak)
+        lng: activeAddr?.lng || 100.5520,
+        subdistrict: activeAddr?.subdistrict,
+        district: activeAddr?.district,
+        province: activeAddr?.province,
+        zipcode: activeAddr?.postcode || activeAddr?.zipcode
+      },
+      payment_method: paymentMethod
+    };
+
+    const existingOrders = JSON.parse(localStorage.getItem('mock_orders') || '[]');
+    localStorage.setItem('mock_orders', JSON.stringify([newOrder, ...existingOrders]));
+
     await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    setFinalOrderId(orderId);
+    setFinalSummary({
+      total: totalPrice,
+      customerName: customerFullName
+    });
+    
     setIsOrderComplete(true);
     setIsSubmitting(false);
     clearCart();
   };
 
-  const totalPrice = getTotalPrice();
+  React.useEffect(() => {
+    if (isOrderComplete && finalOrderId) {
+      const timer = setTimeout(() => {
+        navigate(`/tracking/${finalOrderId}`);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isOrderComplete, navigate, finalOrderId]);
 
-  // --- หน้าจอสั่งซื้อสำเร็จ (ลบไอคอนรถออกแล้ว) ---
   if (isOrderComplete) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center py-20 px-4 font-sans">
@@ -109,7 +165,7 @@ export const Checkout = () => {
 
           <div className="space-y-3">
             <h1 className="text-5xl font-black text-gray-900 tracking-tight">สั่งซื้อสำเร็จ!</h1>
-            <p className="text-xl text-gray-600 font-medium">คำสั่งซื้อของคุณได้รับการยืนยันแล้ว</p>
+            <p className="text-xl text-gray-600 font-medium tracking-tight">เลขอ้างอิง: <span className="text-emerald-600 font-black">{finalOrderId}</span></p>
           </div>
 
           <div className="bg-white p-8 rounded-[2.5rem] border border-green-100 shadow-2xl text-left space-y-4">
@@ -123,12 +179,26 @@ export const Checkout = () => {
              </div>
           </div>
 
-          <Link 
-            to="/shop" 
-            className="block w-full py-5 bg-green-600 text-white text-xl font-black rounded-3xl shadow-xl shadow-green-200 transition-transform hover:scale-[1.02]"
-          >
-            กลับหน้าหลัก
-          </Link>
+          <div className="space-y-4">
+            <button 
+              onClick={() => navigate(`/tracking/${finalOrderId}`)}
+              className="group flex items-center justify-center gap-3 w-full py-5 bg-blue-600 text-white text-xl font-black rounded-3xl shadow-xl shadow-blue-100 transition-all hover:bg-blue-700 hover:scale-[1.02]"
+            >
+              <Truck className="w-6 h-6 animate-bounce" />
+              ติดตามสถานะคำสั่งซื้อ
+            </button>
+            
+            <p className="text-sm text-gray-400 font-bold animate-pulse">
+              ระบบจะพาคุณไปหน้าติดตามสถานะอัตโนมัติใน 5 วินาที...
+            </p>
+
+            <Link 
+              to="/shop" 
+              className="block w-full py-4 text-gray-400 font-bold hover:text-gray-600 transition-colors uppercase tracking-widest text-xs"
+            >
+              กลับหน้าหลัก
+            </Link>
+          </div>
         </motion.div>
       </div>
     );
@@ -138,10 +208,10 @@ export const Checkout = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-center space-y-8">
-          <div className="bg-white p-10 rounded-full w-40 h-40 flex items-center justify-center mx-auto shadow-sm">
+          <div className="bg-white p-10 rounded-full w-40 h-40 flex items-center justify-center mx-auto shadow-sm border border-gray-100">
             <ShoppingBag className="w-20 h-20 text-gray-200" />
           </div>
-          <h1 className="text-3xl font-black text-gray-900">ตะกร้ายังว่างอยู่เลย</h1>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">ตะกร้ายังว่างอยู่เลย</h1>
           <Link to="/shop" className="inline-block px-12 py-5 bg-blue-600 text-white text-xl font-black rounded-3xl shadow-lg shadow-blue-100 transition-all hover:bg-blue-700">ไปเลือกสินค้ากัน</Link>
         </div>
       </div>
@@ -150,7 +220,6 @@ export const Checkout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 font-sans antialiased text-gray-900">
-      {/* Header */}
       <div className="bg-white border-b border-gray-100 h-20 flex items-center px-8 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
@@ -164,9 +233,7 @@ export const Checkout = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          
           <div className="lg:col-span-2 space-y-8">
-            {/* ส่วนที่ 1: ข้อมูลผู้รับ */}
             <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-5">
@@ -214,15 +281,14 @@ export const Checkout = () => {
 
               <div className="p-6 bg-blue-50/50 border border-blue-100 rounded-3xl flex items-start gap-4">
                 <AlertCircle size={24} className="text-blue-600 mt-0.5" />
-                <p className="text-base font-bold text-blue-800 leading-relaxed">
-                  ข้อมูลนี้ดึงมาจากโปรไฟล์ของคุณโดยอัตโนมัติ หากต้องการเปลี่ยนแปลงโปรดแก้ไขในหน้าตั้งค่า
+                <p className="text-base font-bold text-blue-800 leading-relaxed tracking-tight">
+                  ข้อมูลนี้ดึงมาจากโปรไฟล์ของคุณโดยอัตโนมัติ หากมีการเพิ่มที่อยู่ใหม่ ระบบจะอัปเดตข้อมูลที่นี่ทันที
                 </p>
               </div>
             </motion.div>
 
-            {/* ส่วนที่ 2: การชำระเงิน */}
             <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-8">
-               <div className="flex items-center gap-5">
+                <div className="flex items-center gap-5">
                   <div className="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center text-xl font-black shadow-lg shadow-blue-100">2</div>
                   <h2 className="text-2xl font-black tracking-tight">ช่องทางการชำระเงิน</h2>
                 </div>
@@ -249,10 +315,9 @@ export const Checkout = () => {
             </motion.div>
           </div>
 
-          {/* ฝั่งขวา: สรุปราคาสินค้า */}
           <div className="lg:col-span-1">
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-2xl sticky top-24 space-y-8">
-              <h2 className="text-2xl font-black tracking-tight text-gray-900 border-b border-gray-50 pb-5">สรุปคำสั่งซื้อ</h2>
+              <h2 className="text-2xl font-black tracking-tight text-gray-900 border-b border-gray-50 pb-5 uppercase">สรุปคำสั่งซื้อ</h2>
               
               <div className="space-y-5 max-h-[380px] overflow-y-auto pr-2 custom-scrollbar">
                 <AnimatePresence mode="popLayout">
@@ -262,9 +327,9 @@ export const Checkout = () => {
                         <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-lg font-bold text-gray-900 truncate">{item.name}</p>
+                        <p className="text-lg font-bold text-gray-900 truncate tracking-tight">{item.name}</p>
                         <p className="text-base text-blue-600 font-black mt-1">
-                          ฿{item.price.toLocaleString()} <span className="text-gray-400 text-sm font-bold">x{item.quantity}</span>
+                          ฿{item.price.toLocaleString()} <span className="text-gray-400 text-sm font-bold tracking-normal">x{item.quantity}</span>
                         </p>
                       </div>
                       <button onClick={() => removeFromCart(item.id)} className="p-2.5 text-gray-300 hover:text-red-500 hover:bg-white rounded-xl transition-all shadow-sm">
@@ -277,9 +342,9 @@ export const Checkout = () => {
               
               <div className="pt-8 border-t border-gray-100 space-y-6">
                 <div className="space-y-2">
-                  <span className="text-sm font-black text-gray-400 uppercase tracking-widest">ยอดรวมทั้งสิ้น</span>
-                  <div className="text-5xl font-black text-blue-600 tracking-tighter">
-                    ฿{totalPrice.toLocaleString()}
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">ยอดรวมทั้งสิ้น</span>
+                  <div className="text-5xl font-black text-blue-600 tracking-tighter italic">
+                    ฿{getTotalPrice().toLocaleString()}
                   </div>
                 </div>
 
@@ -293,16 +358,15 @@ export const Checkout = () => {
                   ) : (
                     <>
                       <CreditCard size={24} />
-                      <span>ชำระเงินตอนนี้</span>
+                      <span className="uppercase tracking-tighter">ชำระเงินตอนนี้</span>
                     </>
                   )}
                 </button>
               </div>
             </motion.div>
           </div>
-
         </div>
       </div>
     </div>
   );
-};
+};  

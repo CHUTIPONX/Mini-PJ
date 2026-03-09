@@ -1,21 +1,22 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, ShoppingCart, Plus, Minus, Search } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '@/src/context/CartContext';
-import { useFavorites } from '@/src/context/FavoriteContext'; // 1. เพิ่ม FavoriteContext
+import { useFavorites } from '@/src/context/FavoriteContext';
+import { useAuth } from '@/src/context/AuthContext';
 import { products as allProducts } from '@/src/data/products';
 
 const categories = ['ทั้งหมด', 'เสื้อผ้า', 'รองเท้า', 'กระเป๋า', 'อุปกรณ์เสริม'];
 
 export const Shop = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [activeCategory, setActiveCategory] = React.useState('ทั้งหมด');
   const [sortBy, setSortBy] = React.useState('newest');
   const { addToCart } = useCart();
-  const { favorites, toggleFavorite } = useFavorites(); // 2. ดึงฟังก์ชันหัวใจมาใช้
+  const { favorites, toggleFavorite } = useFavorites();
   const [quantities, setQuantities] = React.useState<Record<number, number>>({});
-
-  // ลบ wishlist แบบเดิมที่เป็น useState ออก เพื่อไปใช้จาก Context แทน
 
   const getQuantity = (productId: number) => quantities[productId] || 0;
   
@@ -24,21 +25,36 @@ export const Shop = () => {
     setQuantities(prev => ({ ...prev, [productId]: value }));
   };
 
+  const checkAuthAndAction = (action: () => void) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    action();
+  };
+
   const handleAddToCart = (product: any) => {
     const qty = getQuantity(product.id);
     if (qty > 0) {
-      addToCart({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        image: product.image,
-        quantity: qty
+      checkAuthAndAction(() => {
+        addToCart({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+          quantity: qty
+        });
+        setQuantities(prev => ({ ...prev, [product.id]: 0 }));
       });
-      setQuantities(prev => ({ ...prev, [product.id]: 0 }));
     }
   };
 
-  // 3. ฟังก์ชันเช็คสถานะหัวใจ (สีแดง)
+  const handleToggleFavorite = (product: any) => {
+    checkAuthAndAction(() => {
+      toggleFavorite(product);
+    });
+  };
+
   const isFavorite = (productId: number) => {
     return favorites.some((fav: any) => fav.id === productId);
   };
@@ -79,7 +95,6 @@ export const Shop = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-12">
-        {/* ส่วน Filter และ Sort คงเดิม */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
           <div className="flex flex-wrap gap-2">
             {categories.map((category) => (
@@ -144,9 +159,8 @@ export const Shop = () => {
                     )}
                   </div>
 
-                  {/* 4. แก้ไขปุ่มหัวใจให้เรียกใช้ Context */}
                   <button
-                    onClick={() => toggleFavorite(product)}
+                    onClick={() => handleToggleFavorite(product)}
                     className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-md rounded-full shadow-sm text-slate-400 hover:text-red-500 transition-colors active:scale-90"
                   >
                     <Heart 
@@ -157,7 +171,6 @@ export const Shop = () => {
                   </button>
                 </div>
 
-                {/* ส่วนข้อมูลสินค้าคงเดิม */}
                 <div className="p-4 space-y-4">
                   <div>
                     <Link to={`/product/${product.id}`}>
@@ -205,7 +218,6 @@ export const Shop = () => {
           </AnimatePresence>
         </div>
 
-        {/* ส่วน No Results คงเดิม */}
         {sortedProducts.length === 0 && (
           <div className="py-24 text-center">
             <div className="bg-slate-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">

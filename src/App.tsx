@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { Toaster } from 'react-hot-toast';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { FavoriteProvider } from './context/FavoriteContext'; // 1. ต้อง Import ตัวนี้เข้ามา
+import { FavoriteProvider } from './context/FavoriteContext'; 
 import { Header, Footer } from './components/Layout';
 import { Home } from './pages/Home';
 import { Login } from './pages/Login';
@@ -18,8 +18,8 @@ import { SettingsPage } from './pages/Settings';
 import { Checkout } from './pages/Checkout';
 import { Shop } from './pages/Shop';
 import { ProductDetail } from './pages/ProductDetail';
+import { Tracking } from './pages/Tracking'; 
 
-// ฟังก์ชันเลื่อนขึ้นบนสุดเมื่อเปลี่ยนหน้า
 const ScrollToTop = () => {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -62,8 +62,10 @@ function AppContent() {
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/login" element={<Login />} />
           <Route path="/checkout" element={<Checkout />} />
+          
+          {/* แก้ไข Route สำหรับหน้าติดตามพัสดุให้รองรับ :id */}
+          <Route path="/tracking/:id" element={<ProtectedRoute><Tracking /></ProtectedRoute>} />
 
-          {/* User Protected Routes */}
           <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
@@ -85,7 +87,6 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      {/* 2. หุ้ม FavoriteProvider ไว้ที่นี่ เพื่อให้ทุกหน้าใช้ระบบหัวใจได้ */}
       <FavoriteProvider> 
         <CartProvider>
           <Toaster 
